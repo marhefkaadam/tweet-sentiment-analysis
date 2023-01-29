@@ -1,16 +1,15 @@
 import sys
 import tweepy
 from textblob import TextBlob
+from tweepy import StreamRule
 
 bearer_token = "AAAAAAAAAAAAAAAAAAAAALkMlgEAAAAAyxxUFodsMp0hTCvS6d%2FLLyUzoys%3Dq0X80xScx1avqTKpIRISOd4r59gDRox8RbjMtLr8Bm0ISMaV22"
 
-# Tweepy client creates session connection to twitter
-client = tweepy.Client(bearer_token=bearer_token)
 
-
-def get_user_id(username):
+def get_user_id(client, username):
     """
     Gets unique twitter user id by their username.
+    :param client: used for connection using Twitter API
     :param username:
     :return: user id from endpoint call which is associated with this twitter username
     """
@@ -22,9 +21,10 @@ def get_user_id(username):
     return response.data.id
 
 
-def fetch_latest_tweet(user_id):
+def fetch_latest_tweet(client, user_id):
     """
     Gets latest user tweet which is not a retweets or a reply.
+    :param client: used for connection using Twitter API
     :param user_id: unique twitter user id
     :return: Last tweet posted by the user. Returns data from tweepy.Response.
     """
@@ -52,15 +52,50 @@ def analyze_text_sentiment(text):
         return "Neutral, do nothing."
 
 
+class MyStreamingClient(tweepy.StreamingClient):
+    def on_tweet(self, tweet):
+        """
+        Overridden method prints new incoming tweet and does sentiment analysis on text from the tweet.
+        :param tweet:
+        :return:
+        """
+        print("New tweet:", tweet.text)
+        analysis_result = analyze_text_sentiment(tweet.text)
+        print("Decision based on sentiment analysis", analysis_result)
+
+    def on_request_error(self, status_code):
+        """
+        Prints error code to output and safely disconnects from stream.
+        :param status_code:
+        :return:
+        """
+        print("Error on request, status code:", status_code)
+        self.disconnect()
+        print("Connection closed...")
+
+
 def main():
     try:
-        user_id = get_user_id("elonmusk")
+        # First approach: could be fetching tweets regularly in a loop and checking if the tweet is different from
+        # previously fetched tweet - not as good as the second approach so i scraped it
+        # Tweepy client creates session connection to twitter
+        # client = tweepy.Client(bearer_token=bearer_token)
+        # user_id = get_user_id(client, "elonmusk")
 
-        last_tweet = fetch_latest_tweet(user_id)
-        print("Tweet:", last_tweet.text)
+        # last_tweet = fetch_latest_tweet(client, user_id)
+        # print("New tweet:", last_tweet.text)
 
-        analysis_result = analyze_text_sentiment(last_tweet.text)
-        print(analysis_result)
+        # analysis_result = analyze_text_sentiment(last_tweet.text)
+        # print(analysis_result)
+
+        # Second approach: constant waiting for new tweets using tweepy StreamingClient
+        streaming_client = MyStreamingClient(bearer_token=bearer_token)
+        # rules are defined to filter new incoming tweets by user and type of tweet
+        rules = StreamRule("from:elonmusk -is:retweet -is:reply")
+        streaming_client.add_rules(rules)
+
+        print("Started client streaming...")
+        streaming_client.filter()
 
     except Exception as e:
         print("Exception:", e)
