@@ -1,4 +1,5 @@
 import sys
+from time import sleep
 import tweepy
 from textblob import TextBlob
 from tweepy import StreamRule
@@ -61,7 +62,7 @@ class MyStreamingClient(tweepy.StreamingClient):
         """
         print("New tweet:", tweet.text)
         analysis_result = analyze_text_sentiment(tweet.text)
-        print("Decision based on sentiment analysis", analysis_result)
+        print("Decision based on sentiment analysis:", analysis_result)
 
     def on_request_error(self, status_code):
         """
@@ -73,6 +74,9 @@ class MyStreamingClient(tweepy.StreamingClient):
         self.disconnect()
         print("Connection closed...")
 
+    def on_closed(self, response):
+        print("Connection closed...")
+
 
 def main():
     try:
@@ -81,7 +85,6 @@ def main():
         # Tweepy client creates session connection to twitter
         # client = tweepy.Client(bearer_token=bearer_token)
         # user_id = get_user_id(client, "elonmusk")
-
         # last_tweet = fetch_latest_tweet(client, user_id)
         # print("New tweet:", last_tweet.text)
 
@@ -95,7 +98,9 @@ def main():
         streaming_client.add_rules(rules)
 
         print("Started client streaming...")
-        streaming_client.filter()
+        streaming_client.filter(threaded=True)
+        sleep(100)
+        streaming_client.disconnect()
 
     except Exception as e:
         print("Exception:", e)
