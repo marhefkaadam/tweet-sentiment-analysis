@@ -4,7 +4,7 @@ import tweepy
 from textblob import TextBlob
 from tweepy import StreamRule
 
-bearer_token = "AAAAAAAAAAAAAAAAAAAAALkMlgEAAAAAyxxUFodsMp0hTCvS6d%2FLLyUzoys%3Dq0X80xScx1avqTKpIRISOd4r59gDRox8RbjMtLr8Bm0ISMaV22"
+bearer_token = ""
 
 
 def get_user_id(client, username):
